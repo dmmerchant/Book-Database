@@ -8,6 +8,12 @@ const resolvers = {
       return User.findOne({
       $or: [{ _id: user ? user._id : id }, { username: username }]})
     },
+    me: async (parent, args, context) => {
+      if (context.user) {
+        return User.findOne({ _id: context.user._id });
+      }
+      throw new AuthenticationError('You need to be logged in!');
+    },
 
   },
   Mutation: {
@@ -33,18 +39,18 @@ const resolvers = {
 
       return { token, user };
     },
-    saveBook: async (parent, { userId, bookId }, context) => {
+    saveBook: async (parent, { book }, context) => {
       const updatedUser = await User.findOneAndUpdate(
-        { _id: userId },
-        { $addToSet: { savedBooks: bookId } },
+        { _id: context._id },
+        { $addToSet: { savedBooks: book } },
         { new: true, runValidators: true }
       );
       return updatedUser;
     },
-    deleteBook: async (parent, { userId, bookId }) => {
+    deleteBook: async (parent, { bookId }, context) => {
       const updatedUser = await User.findOneAndUpdate(
-        { _id: userId },
-        { $pull: { savedBooks: { bookId: bookId } } },
+        { _id: context.user._id },
+        { $pull: { savedBooks: { _id: bookId } } },
         { new: true }
       );
       return updatedUser;
